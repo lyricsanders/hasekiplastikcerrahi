@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hasta Takip Sistemi</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome for icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+        }
+        .container {
+            max-width: 1400px;
+        }
+        .card {
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        .card-header {
+            background-color: #4e73df;
+            color: white;
+            font-weight: bold;
+            border-radius: 8px 8px 0 0;
+        }
+        .stats-card {
+            border-left: 4px solid;
+            transition: transform 0.3s;
+        }
+        .stats-card:hover {
+            transform: translateY(-5px);
+        }
+        .stats-card.primary {
+            border-left-color: #4e73df;
+        }
+        .stats-card.success {
+            border-left-color: #1cc88a;
+        }
+        .stats-card.info {
+            border-left-color: #36b9cc;
+        }
+        .stats-card.warning {
+            border-left-color: #f6c23e;
+        }
+        .table {
+            font-size: 14px;
+        }
+        .table thead th {
+            background-color: #f8f9fc;
+            border-bottom: 2px solid #e3e6f0;
+        }
+        /* Telefon sütunu genişliği */
+        .table th:nth-child(5),
+        .table td:nth-child(5) {
+            min-width: 150px;
+            width: 150px;
+        }
+        /* İşlemler sütununun genişliği */
+        .table th:last-child,
+        .table td:last-child {
+            width: 250px;
+            min-width: 250px;
+        }
+        /* Butonların sabit kalması için stil */
+        .action-buttons {
+            display: flex;
+            flex-wrap: nowrap;
+            width: 100%;
+        }
+        .action-buttons .btn {
+            flex: 0 0 auto;
+            width: auto;
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            white-space: nowrap;
+            margin-right: 2px;
+        }
+        .modal-content {
+            border-radius: 10px;
+        }
+        .search-container {
+            margin-bottom: 20px;
+        }
+        .randevu-tarihi-var {
+            background-color: #e8f4fe !important;
+        }
+        /* Randevu modalı için yeni stiller */
+        .modal-fullscreen-xl-down {
+            width: 100%;
+            max-width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .modal-fullscreen-xl-down .modal-content {
+            height: 100%;
+            border: 0;
+            border-radius: 0;
+        }
+        
+        .modal-fullscreen-xl-down .modal-body {
+            overflow-y: auto;
+            padding: 0;
+        }
+        
+        #randevuTakvimiFrame {
+            width: 100%;
+            height: 90vh; /* Ekran yüksekliğinin %90'ı */
+            border: none;
+        }
+        
+        /* Sıralama butonları için stil */
+        .sort-buttons {
+            margin-bottom: 15px;
+        }
+        
+        /* Büyük harfli metin için stil */
+        .uppercase-text {
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <h2 class="text-center mb-4">Hasta Takip Sistemi</h2>
+        
+        <!-- Stats Cards -->
+        <div class="row mb-4">
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card stats-card primary h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Toplam Hasta</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800" id="toplam-hasta">0</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-users fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card stats-card success h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Randevulu Hasta</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800" id="randevulu-hasta">0</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-calendar-check fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card stats-card info h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Bugünkü Randevu</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800" id="bugunki-randevu">0</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-calendar-day fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card stats-card warning h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Bekleyen Hasta</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800" id="bekleyen-hasta">0</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-clock fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Search and Filter -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-search me-1"></i>
+                Hasta Arama
+            </div>
+            <div class="card-body">
+                <div class="row search-container">
+                    <div class="col-md-6">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="search-input" placeholder="Ad Soyad, Tanı, Not, Telefon ara...">
+                            <button class="btn btn-primary" type="button" id="search-button">
+                                <i class="fas fa-search"></i> Ara
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="hide-appointed-patients" checked>
+                            <label class="form-check-label" for="hide-appointed-patients">Randevulu Hastaları Gizle</label>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <!-- Sıralama Butonları -->
+                        <div class="sort-buttons text-end">
+                            <button class="btn btn-outline-secondary btn-sm me-1" id="sort-newest-first">
+                                <i class="fas fa-sort-amount-down"></i> Yeniden Eskiye
+                            </button>
+                            <button class="btn btn-outline-secondary btn-sm" id="sort-oldest-first">
+                                <i class="fas fa-sort-amount-up"></i> Eskiden Yeniye
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Patients Table -->
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-table me-1"></i>
+                Hasta Listesi
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-striped" id="patients-table">
+                        <thead>
+                            <tr>
+                                <th>Eklenme Tarihi</th>
+                                <th>Protokol No</th>
+                                <th>Adı Soyadı</th>
+                                <th>Tanısı</th>
+                                <th>Telefon</th>
+                                <th>Hasta Notu</th>
+                                <th>Randevu Tarihi</th>
+                                <th>İşlemler</th>
+                            </tr>
+                        </thead>
+                        <tbody id="patients-table-body">
+                            <!-- Patient data will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Randevu Modal - Yeniden Boyutlandırılmış -->
+    <div class="modal fade" id="randevuModal" tabindex="-1" aria-labelledby="randevuModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-fullscreen-xl-down">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="randevuModalLabel">Randevu Takvimi</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <iframe id="randevuTakvimiFrame" src="" width="100%" frameborder="0"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Edit Patient Modal -->
+    <div class="modal fade" id="editPatientModal" tabindex="-1" aria-labelledby="editPatientModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editPatientModalLabel">Hastayı Düzenle</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editPatientForm">
+                        <input type="hidden" id="edit-patient-id">
+                        <div class="mb-3">
+                            <label for="edit-protokol-no" class="form-label">Protokol No</label>
+                            <input type="text" class="form-control" id="edit-protokol-no">
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-name" class="form-label">Adı Soyadı</label>
+                            <input type="text" class="form-control" id="edit-name">
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-diagnosis" class="form-label">Tanısı</label>
+                            <input type="text" class="form-control" id="edit-diagnosis">
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-phone" class="form-label">Telefon</label>
+                            <input type="text" class="form-control" id="edit-phone" placeholder="05XX XXX XX XX">
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-note" class="form-label">Hasta Notu</label>
+                            <textarea class="form-control" id="edit-note" rows="3"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                    <button type="button" class="btn btn-primary" id="save-edit-button">Kaydet</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.20.0/firebase-app-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.20.0/firebase-firestore-compat.js"></script>
+    
+    <!-- Bootstrap JS Bundle with Popper -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Firebase yapılandırması
+        const firebaseConfig = {
+            apiKey: "AIzaSyB1yN0BoUYM4EppFlsMWHPT35D4Z3oh7-U",
+            authDomain: "hastadefteri.firebaseapp.com",
+            databaseURL: "https://hastadefteri-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "hastadefteri",
+            storageBucket: "hastadefteri.firebasestorage.app",
+            messagingSenderId: "362565939204",
+            appId: "1:362565939204:web:d32b8a642cef18797a0551",
+            measurementId: "G-YW7GGTNF0M"
+        };
+
+        // Firebase başlatma
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        
+        // Global değişkenler
+        let allPatients = [];
+        const patientsTableBody = document.getElementById('patients-table-body');
+        const searchInput = document.getElementById('search-input');
+        const searchButton = document.getElementById('search-button');
+        const hideAppointedCheckbox = document.getElementById('hide-appointed-patients');
+        const sortNewestFirstBtn = document.getElementById('sort-newest-first');
+        const sortOldestFirstBtn = document.getElementById('sort-oldest-first');
+        
+        // İstatistik elementleri
+        const totalPatientsEl = document.getElementById('toplam-hasta');
+        const appointedPatientsEl = document.getElementById('randevulu-hasta');
+        const todayAppointmentsEl = document.getElementById('bugunki-randevu');
+        const waitingPatientsEl = document.getElementById('bekleyen-hasta');
+        
+        // Geçerli sıralama durumu (varsayılan olarak yeniden eskiye)
+        let currentSortOrder = 'newest-first';
+        
+        // Telefon numarası formatı fonksiyonu
+        function formatPhoneNumber(phoneNumber) {
+            if (!phoneNumber) return '';
+            
+            // Tüm olmayan sayısal karakterleri kaldır
+            const cleaned = phoneNumber.replace(/\D/g, '');
+            
+            // Eğer temizlenmiş numara 10 haneden azsa, olduğu gibi döndür
+            if (cleaned.length < 10) return cleaned;
+            
+            // Formatlı telefon numarası oluştur (0XXX XXX XX XX)
+            const formatted = cleaned.replace(/(\d{1})(\d{3})(\d{3})(\d{2})(\d{2})/, "$1$2 $3 $4 $5");
+            
+            return formatted;
+        }
+        
+        // Sayfa yüklendiğinde hasta verilerini getir
+        document.addEventListener('DOMContentLoaded', function() {
+            fetchPatients();
+            
+            // Arama işlevi
+            searchButton.addEventListener('click', function() {
+                filterPatients();
+            });
+            
+            searchInput.addEventListener('keyup', function(event) {
+                if (event.key === 'Enter') {
+                    filterPatients();
+                }
+            });
+            
+            // Randevulu hastaları gizleme/gösterme
+            hideAppointedCheckbox.addEventListener('change', function() {
+                filterPatients();
+            });
+            
+            // Sıralama butonları
+            sortNewestFirstBtn.addEventListener('click', function() {
+                currentSortOrder = 'newest-first';
+                sortPatients();
+                highlightActiveSort();
+            });
+            
+            sortOldestFirstBtn.addEventListener('click', function() {
+                currentSortOrder = 'oldest-first';
+                sortPatients();
+                highlightActiveSort();
+            });
+            
+            // Sayfa yüklendiğinde filtreleme işlemini çalıştır (randevulu hastaları gizlemek için)
+            filterPatients();
+            highlightActiveSort();
+        });
+        
+        // Aktif sıralama butonunu vurgula
+        function highlightActiveSort() {
+            sortNewestFirstBtn.classList.remove('btn-primary');
+            sortNewestFirstBtn.classList.add('btn-outline-secondary');
+            sortOldestFirstBtn.classList.remove('btn-primary');
+            sortOldestFirstBtn.classList.add('btn-outline-secondary');
+            
+            if (currentSortOrder === 'newest-first') {
+                sortNewestFirstBtn.classList.remove('btn-outline-secondary');
+                sortNewestFirstBtn.classList.add('btn-primary');
+            } else {
+                sortOldestFirstBtn.classList.remove('btn-outline-secondary');
+                sortOldestFirstBtn.classList.add('btn-primary');
+            }
+        }
+        
+        // Hastaları sırala
+        function sortPatients() {
+            allPatients.sort((a, b) => {
+                // Firebase timestamp objelerini karşılaştır
+                const dateA = a.createdAt ? (a.createdAt.toDate ? a.createdAt.toDate() : new Date(a.createdAt)) : new Date(0);
+                const dateB = b.createdAt ? (b.createdAt.toDate ? b.createdAt.toDate() : new Date(b.createdAt)) : new Date(0);
+                
+                // Sıralama yönüne göre döndür
+                if (currentSortOrder === 'newest-first') {
+                    return dateB - dateA; // Yeniden eskiye
+                } else {
+                    return dateA - dateB; // Eskiden yeniye
+                }
+            });
+            
+            filterPatients(); // Sıralama sonrası filtreleme ile göster
+        }
+        
+        // Hastaları Firebase'den getir
+        function fetchPatients() {
+            db.collection("girisimselHastalar").get()
+                .then((querySnapshot) => {
+                    allPatients = [];
+                    querySnapshot.forEach((doc) => {
+                        const patientData = doc.data();
+                        patientData.id = doc.id; // Firebase döküman ID'sini ekle
+                        
+                        // Telefon numarasını formatlı hale getir
+                        if (patientData.phone) {
+                            patientData.formattedPhone = formatPhoneNumber(patientData.phone);
+                        }
+                        
+                        allPatients.push(patientData);
+                    });
+                    
+                    // Hastaları sırala (geçerli sıralama durumuna göre)
+                    sortPatients();
+                    
+                    // İstatistikleri güncelle
+                    updateStatistics(allPatients);
+                })
+                .catch((error) => {
+                    console.error("Hastaları getirirken hata oluştu: ", error);
+                    alert("Hastaları getirirken bir hata oluştu. Lütfen tekrar deneyin.");
+                });
+        }
+        
+        // Hastaları filtrele
+        function filterPatients() {
+            const searchTerm = searchInput.value.toLowerCase().trim();
+            const hideAppointed = hideAppointedCheckbox.checked;
+            
+            let filteredPatients = allPatients;
+            
+            // Arama terimine göre filtrele
+            if (searchTerm) {
+                filteredPatients = filteredPatients.filter(patient => {
+                    return (
+                        (patient.fullName && patient.fullName.toLowerCase().includes(searchTerm)) ||
+                        (patient.diagnosis && patient.diagnosis.toLowerCase().includes(searchTerm)) ||
+                        (patient.patientNote && patient.patientNote.toLowerCase().includes(searchTerm)) ||
+                        (patient.phone && patient.phone.toLowerCase().includes(searchTerm))
+                    );
+                });
+            }
+            
+            // Randevulu hastaları gizle
+            if (hideAppointed) {
+                filteredPatients = filteredPatients.filter(patient => {
+                    return !patient.bosField1 || patient.bosField1.trim() === '';
+                });
+            }
+            
+            displayPatients(filteredPatients);
+        }
+        
+        // Hastaları tabloda göster
+        function displayPatients(patients) {
+            patientsTableBody.innerHTML = '';
+            
+            if (patients.length === 0) {
+                const emptyRow = document.createElement('tr');
+                emptyRow.innerHTML = '<td colspan="8" class="text-center">Hasta bulunamadı</td>';
+                patientsTableBody.appendChild(emptyRow);
+                return;
+            }
+            
+            patients.forEach(patient => {
+                const row = document.createElement('tr');
+                
+                // Randevusu olan hastalara sınıf ekle
+                if (patient.bosField1 && patient.bosField1.trim() !== '') {
+                    row.classList.add('randevu-tarihi-var');
+                }
+                
+                // Hasta bilgilerini göster (büyük harfle)
+                row.innerHTML = `
+                    <td>${patient.createdAt ? formatFirebaseTimestamp(patient.createdAt) : '-'}</td>
+                    <td class="uppercase-text">${patient.bosField2 || '-'}</td>
+                    <td class="uppercase-text">${patient.fullName || '-'}</td>
+                    <td class="uppercase-text">${patient.diagnosis || '-'}</td>
+                    <td>${patient.formattedPhone || patient.phone || '-'}</td>
+                    <td class="uppercase-text">${patient.patientNote || '-'}</td>
+                    <td>${patient.bosField1 || '-'}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <button type="button" class="btn btn-primary randevu-btn" data-id="${patient.id}">
+                                <i class="fas fa-calendar-plus"></i> Randevu
+                            </button>
+                            <button type="button" class="btn btn-warning edit-btn" data-id="${patient.id}">
+                                <i class="fas fa-edit"></i> Düzenle
+                            </button>
+                            <button type="button" class="btn btn-danger delete-btn" data-id="${patient.id}">
+                                <i class="fas fa-trash"></i> Sil
+                            </button>
+                            ${patient.bosField1 && patient.bosField1.trim() !== '' ? 
+                                `<button type="button" class="btn btn-secondary cancel-appointment-btn" data-id="${patient.id}">
+                                    <i class="fas fa-calendar-times"></i> İptal
+                                </button>` : ''}
+                        </div>
+                    </td>
+                `;
+                
+                patientsTableBody.appendChild(row);
+            });
+            
+            // Buton olaylarını ekle
+            addButtonEventListeners();
+        }
+        
+        // Firebase timestamp'i formatlama
+        function formatFirebaseTimestamp(timestamp) {
+            if (!timestamp) return '-';
+            
+            // Timestamp objesi veya string olabilir
+            let date;
+            if (timestamp.toDate) {
+                date = timestamp.toDate();
+            } else if (typeof timestamp === 'string') {
+                // String formatta tarih (örn: "May 7, 2025 at 10:17:18 PM UTC+3")
+                date = new Date(timestamp);
+            } else {
+                return '-';
+            }
+            
+            return date.toLocaleString('tr-TR');
+        }
+        
+        // Butonlara olay dinleyicileri ekle
+        function addButtonEventListeners() {
+            // Randevu tarihi ver butonları
+            document.querySelectorAll('.randevu-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const patientId = this.getAttribute('data-id');
+                    openRandevuModal(patientId);
+                });
+            });
+            
+            // Düzenle butonları
+            document.querySelectorAll('.edit-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const patientId = this.getAttribute('data-id');
+                    openEditModal(patientId);
+                });
+            });
+            
+            // Sil butonları
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const patientId = this.getAttribute('data-id');
+                    deletePatient(patientId);
+                });
+            });
+            
+            // Randevuyu iptal et butonları
+            document.querySelectorAll('.cancel-appointment-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const patientId = this.getAttribute('data-id');
+                    cancelAppointment(patientId);
+                });
+            });
+        }
+        
+        // Randevu modalını aç
+        function openRandevuModal(patientId) {
+            const patient = allPatients.find(p => p.id === patientId);
+            if (!patient) return;
+            
+            // Randevu modal bilgilerini doldur
+            const randevuModal = new bootstrap.Modal(document.getElementById('randevuModal'));
+            
+            // Randevu bilgilerini firebase'e kaydet (randevumodalcollection)
+            // Büyük harfe çevrili ve formatlı telefon numarası kullan
+            db.collection("randevumodalcollection").doc("randevumodaldocument").set({
+                randevumodalprotokolno: patient.bosField2 ? patient.bosField2.toUpperCase() : '',
+                randevumodaladsoyad: patient.fullName ? patient.fullName.toUpperCase() : '',
+                randevumodaltanısı: patient.diagnosis ? patient.diagnosis.toUpperCase() : '',
+                randevumodaltelefonu: patient.formattedPhone || patient.phone || '',
+                randevumodalhastanotu: patient.patientNote ? patient.patientNote.toUpperCase() : '',
+                randevumodalrandevutarihi: patient.bosField1 || ''
+            })
+            .then(() => {
+                // Modal iframe url'ini ayarla
+                document.getElementById('randevuTakvimiFrame').src = 'randevutakvimi.html';
+                
+                // Modal açık olduğunda, iframe'i pencereye göre boyutlandır
+                randevuModal.show();
+                
+                // Modal gösterildikten sonra iframe yüksekliğini ayarla
+                document.getElementById('randevuModal').addEventListener('shown.bs.modal', function () {
+                    adjustIframeHeight();
+                });
+            })
+            .catch((error) => {
+                console.error("Randevu bilgileri kaydedilirken hata: ", error);
+                alert("Randevu bilgileri kaydedilirken hata oluştu.");
+            });
+        }
+        
+        // Iframe yüksekliğini ayarla
+        function adjustIframeHeight() {
+            const windowHeight = window.innerHeight;
+            const modalHeader = document.querySelector('#randevuModal .modal-header').offsetHeight;
+            const iframe = document.getElementById('randevuTakvimiFrame');
+            
+            // Iframe yüksekliğini pencere yüksekliğine göre ayarla (header'ı çıkar)
+            const newHeight = windowHeight - modalHeader - 20; // 20px ekstra boşluk
+            iframe.style.height = newHeight + 'px';
+        }
+        
+        // Pencere boyutu değiştiğinde iframe'i yeniden boyutlandır
+        window.addEventListener('resize', function() {
+            if (document.getElementById('randevuModal').classList.contains('show')) {
+                adjustIframeHeight();
+            }
+        });
+        
+        // Düzenleme modalını aç
+        function openEditModal(patientId) {
+            const patient = allPatients.find(p => p.id === patientId);
+            if (!patient) return;
+            
+            // Form alanlarını doldur
+            document.getElementById('edit-patient-id').value = patientId;
+            document.getElementById('edit-protokol-no').value = patient.bosField2 || '';
+            document.getElementById('edit-name').value = patient.fullName || '';
+            document.getElementById('edit-diagnosis').value = patient.diagnosis || '';
+            document.getElementById('edit-phone').value = patient.phone || '';
+            document.getElementById('edit-note').value = patient.patientNote || '';
+            
+            // Modal göster
+            const editModal = new bootstrap.Modal(document.getElementById('editPatientModal'));
+            editModal.show();
+        }
+        
+        
+        // Hasta kaydetme olayı
+        document.getElementById('save-edit-button').addEventListener('click', function() {
+            const patientId = document.getElementById('edit-patient-id').value;
+            
+            // Form verilerini al
+            const updatedData = {
+                bosField2: document.getElementById('edit-protokol-no').value,
+                fullName: document.getElementById('edit-name').value,
+                diagnosis: document.getElementById('edit-diagnosis').value,
+                phone: document.getElementById('edit-phone').value,
+                patientNote: document.getElementById('edit-note').value
+            };
+            
+            // Firebase güncelleme
+            db.collection("girisimselHastalar").doc(patientId).update(updatedData)
+                .then(() => {
+                    // Modali kapat
+                    const editModal = bootstrap.Modal.getInstance(document.getElementById('editPatientModal'));
+                    editModal.hide();
+                    
+                    // Hasta listesini yenile
+                    fetchPatients();
+                })
+                .catch((error) => {
+                    console.error("Hasta güncellenirken hata: ", error);
+                    alert("Hasta güncellenirken bir hata oluştu.");
+                });
+        });
+        
+        // Hasta silme fonksiyonu
+        function deletePatient(patientId) {
+            if (!confirm("Bu hastayı silmek istediğinizden emin misiniz?")) {
+                return;
+            }
+            
+            db.collection("girisimselHastalar").doc(patientId).delete()
+                .then(() => {
+                    fetchPatients();
+                })
+                .catch((error) => {
+                    console.error("Hasta silinirken hata: ", error);
+                    alert("Hasta silinirken bir hata oluştu.");
+                });
+        }
+        
+        // Randevu iptal fonksiyonu
+        function cancelAppointment(patientId) {
+            if (!confirm("Bu hastanın randevusunu iptal etmek istediğinizden emin misiniz?")) {
+                return;
+            }
+            
+            db.collection("girisimselHastalar").doc(patientId).update({
+                bosField1: "" // Randevu tarihini temizle
+            })
+            .then(() => {
+                fetchPatients();
+            })
+            .catch((error) => {
+                console.error("Randevu iptal edilirken hata: ", error);
+                alert("Randevu iptal edilirken bir hata oluştu.");
+            });
+        }
+        
+        // İstatistikleri güncelle
+        function updateStatistics(patients) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); // Günün başlangıcı
+            
+            // Toplam hasta sayısı
+            totalPatientsEl.textContent = patients.length;
+            
+            // Randevulu hasta sayısı
+            const appointedPatients = patients.filter(p => p.bosField1 && p.bosField1.trim() !== '');
+            appointedPatientsEl.textContent = appointedPatients.length;
+            
+            // Bugünkü randevu sayısı (basit karşılaştırma için - gerçekte daha kapsamlı tarih kontrolü gerekir)
+            const todayAppointments = appointedPatients.filter(p => {
+                if (!p.bosField1) return false;
+                
+                // Basit yaklaşım: bugünün tarihini içeriyor mu kontrolü
+                const todayStr = today.toLocaleDateString('tr-TR');
+                return p.bosField1.includes(todayStr);
+            });
+            todayAppointmentsEl.textContent = todayAppointments.length;
+            
+            // Bekleyen hasta sayısı (randevusu olmayan)
+            waitingPatientsEl.textContent = patients.length - appointedPatients.length;
+        }
+    </script>
+</body>
+</html>
