@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Randevu Defteri - Görüntüleme</title>
+    <title>Randevu Takvimi</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.1/firebase-app-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.1/firebase-firestore-compat.js"></script>
     <style>
@@ -43,6 +43,7 @@
         
         .container {
             display: flex;
+            flex-direction: column;
             height: 100%;
             width: 100%;
             flex: 1;
@@ -51,36 +52,30 @@
             gap: 15px;
         }
         
-        /* ===== HEADER STYLES ===== */
         .header {
-            background-color: var(--primary-color);
-            color: white;
-            padding: 12px 20px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            background-color: #fff;
+            box-shadow: var(--box-shadow);
+            padding: 16px 20px;
+            border-radius: var(--border-radius);
             display: flex;
-            align-items: center;
             justify-content: space-between;
+            align-items: center;
         }
         
         .header h1 {
             font-size: 1.5rem;
+            color: var(--primary-dark);
             margin: 0;
-            font-weight: 600;
-        }
-        
-        .header-buttons {
-            display: flex;
-            gap: 10px;
         }
         
         /* ===== MAIN CONTENT STYLES ===== */
         .main-content {
             flex: 1;
-            padding: 0;
             display: flex;
             flex-direction: column;
             min-width: 0;
             min-height: 0;
+            overflow: hidden;
         }
         
         .randevu-takvimi {
@@ -92,15 +87,6 @@
             display: flex;
             flex-direction: column;
             min-height: 0;
-        }
-        
-        .takvim-baslik {
-            color: var(--primary-dark);
-            border-bottom: 2px solid var(--primary-color);
-            padding-bottom: 10px;
-            margin-top: 0;
-            font-size: 1.3rem;
-            font-weight: 600;
         }
         
         /* ===== COLLECTION SELECTION STYLES ===== */
@@ -135,11 +121,12 @@
             box-shadow: 0 3px 6px rgba(67, 97, 238, 0.3);
         }
         
-        /* ===== CALENDAR CONTROLS ===== */
+        /* ===== TAKVIM KONTROLCÜ STYLES ===== */
         .takvim-kontroller {
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             gap: 10px;
         }
         
@@ -151,26 +138,20 @@
             cursor: pointer;
             font-weight: 600;
             transition: var(--transition);
-            font-size: 0.9rem;
             color: var(--primary-dark);
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
         }
         
         .takvim-kontroller button:hover {
-            background-color: var(--light-gray);
-            transform: translateY(-1px);
+            background-color: var(--primary-light);
+            color: white;
         }
         
         .takvim-kontroller span {
-            flex: 1;
-            text-align: center;
             font-weight: 600;
-            padding: 10px;
+            padding: 8px 15px;
+            background-color: var(--light-color);
             border-radius: var(--border-radius);
-            background-color: var(--primary-light);
-            color: white;
-            font-size: 1rem;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            color: var(--dark-color);
         }
         
         /* ===== CALENDAR CONTAINER STYLES ===== */
@@ -289,13 +270,51 @@
             letter-spacing: 0.3px;
         }
         
-        .randevu-hucresi:hover {
-            background-color: rgba(67, 97, 238, 0.05);
-        }
-        
         .randevu-dolu {
             background-color: rgba(247, 37, 133, 0.05);
             border-left: 3px solid var(--secondary-color);
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            font-style: italic;
+            color: var(--gray-color);
+            background-color: rgba(255, 255, 255, 0.8);
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+        
+        /* ===== NOTIFICATION STYLES ===== */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 14px 20px;
+            border-radius: var(--border-radius);
+            color: white;
+            font-weight: 600;
+            opacity: 0;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            z-index: 1000;
+            font-size: 0.95rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transform: translateY(-10px);
+        }
+        
+        .notification.success {
+            background-color: #10b981;
+            border-left: 4px solid #059669;
+        }
+        
+        .notification.error {
+            background-color: #ef4444;
+            border-left: 4px solid #dc2626;
+        }
+        
+        .notification.show {
+            opacity: 1;
+            transform: translateY(0);
         }
         
         /* Tooltip/Popup Stili */
@@ -348,57 +367,27 @@
             font-size: 0.95rem;
         }
         
-        .loading {
-            text-align: center;
-            padding: 20px;
-            font-style: italic;
-            color: var(--gray-color);
-            background-color: rgba(255, 255, 255, 0.8);
-            border-radius: var(--border-radius);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-        }
-        
-        .notification {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 14px 20px;
-            border-radius: var(--border-radius);
-            color: white;
-            font-weight: 600;
-            opacity: 0;
-            transition: opacity 0.3s ease, transform 0.3s ease;
-            z-index: 1000;
-            font-size: 0.95rem;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            transform: translateY(-10px);
-        }
-        
-        .notification.info {
-            background-color: #3498db;
-            border-left: 4px solid #2980b9;
-        }
-        
-        .notification.error {
-            background-color: #ef4444;
-            border-left: 4px solid #dc2626;
-        }
-        
-        .notification.show {
-            opacity: 1;
-            transform: translateY(0);
-        }
-        
         /* ===== MOBILE RESPONSIVE STYLES ===== */
-        @media (max-width: 768px) {
+        @media (max-width: 992px) {
             .container {
-                flex-direction: column;
                 padding: 8px;
                 gap: 10px;
             }
             
             .randevu-takvimi {
                 padding: 15px;
+            }
+            
+            .header {
+                padding: 10px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+                padding: 8px;
+                gap: 10px;
             }
             
             .takvim-kontroller button {
@@ -435,6 +424,14 @@
                 gap: 8px;
             }
             
+            .header {
+                padding: 8px;
+            }
+            
+            .header h1 {
+                font-size: 1.2rem;
+            }
+            
             .randevu-takvimi {
                 padding: 12px;
             }
@@ -458,7 +455,7 @@
                 padding: 6px 8px;
             }
             
-            .bos-kose, .gun-hucresi {
+            .saat-hucresi, .takvim-header .saat-baslik {
                 width: 70px;
                 font-size: 0.75rem;
                 padding: 6px;
@@ -471,14 +468,13 @@
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>Randevu Defteri</h1>
-        <div class="header-buttons">
-            <button id="bugun-btn">Bugün</button>
-        </div>
-    </div>
-    
     <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>Randevu Takvimi</h1>
+        </div>
+        
+        <!-- Ana İçerik - Randevu Takvimi -->
         <div class="main-content">
             <div class="randevu-takvimi">
                 <div class="koleksiyon-secimi">
@@ -546,9 +542,6 @@
         // Mevcut randevuları yükle
         async function randevulariYukle() {
             try {
-                // Takvim yüklenirken yükleme mesajını göster
-                document.getElementById("randevu-takvimi").innerHTML = '<div class="loading">Randevular yükleniyor...</div>';
-                
                 // Aktif koleksiyondaki tüm randevuları yükle
                 const snapshot = await db.collection(hastaKoleksiyonu).get();
                 
@@ -565,15 +558,12 @@
                             adSoyad: data.adSoyad || "",
                             telefon: data.telefon || "",
                             tani: data.tani || "",
-                            hastaNotu: data.hastaNotu || "",
                             koleksiyon: hastaKoleksiyonu
                         });
                     }
                 });
                 
                 console.log(`Mevcut randevular (${hastaKoleksiyonu}):`, mevcutRandevular);
-                
-                // Takvimi güncelle
                 takvimOlustur(currentWeekStart);
                 
             } catch (error) {
@@ -582,12 +572,12 @@
             }
         }
         
-        // Takvimi oluştur
+        // takvimOlustur fonksiyonu
         function takvimOlustur(baslangicTarihi) {
             const takvimContainer = document.getElementById("randevu-takvimi");
             takvimContainer.innerHTML = ""; // Mevcut içeriği temizle
             
-            // Saatler (belirtilen aralıklara göre)
+            // Saatler (belirtilen aralıklara göre, 16:30'a kadar uzatıldı)
             const saatler = [
                 "09:00-09:30", "09:30-10:00", "10:00-10:30", "10:30-11:00",
                 "11:00-11:30", "11:30-12:00", "13:00-13:30", "13:30-14:00",
@@ -604,7 +594,7 @@
             
             // Hafta bilgisini güncelle
             const ilkGun = tarihler[0];
-            const sonGun = tarihler[4]; // Cuma
+            const sonGun = tarihler[4]; // Artık Cuma
             const aylar = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
             document.getElementById("hafta-bilgisi").textContent = 
                 `${ilkGun.getDate()} ${aylar[ilkGun.getMonth()]} - ${sonGun.getDate()} ${aylar[sonGun.getMonth()]} ${sonGun.getFullYear()}`;
@@ -698,7 +688,7 @@
                         `;
                         randevuHucresi.appendChild(telefonItem);
                         
-                        // Tooltip oluştur (daha detaylı bilgi)
+                        // Tooltip oluştur
                         const tooltip = document.createElement("div");
                         tooltip.className = "randevu-tooltip";
                         tooltip.innerHTML = `
@@ -719,10 +709,6 @@
                                 <div class="tooltip-label">Telefon:</div>
                                 <div class="tooltip-value">${mevcutRandevu.telefon || "-"}</div>
                             </div>
-                            <div class="tooltip-item">
-                                <div class="tooltip-label">Hasta Notu:</div>
-                                <div class="tooltip-value">${mevcutRandevu.hastaNotu || "-"}</div>
-                            </div>
                         `;
                         randevuHucresi.appendChild(tooltip);
                         
@@ -742,7 +728,7 @@
                 takvimIcerik.appendChild(gunSatiri);
             });
         }
-        
+
         // Bildirim gösterme fonksiyonu
         function gosterBildirim(mesaj, tip) {
             const notification = document.getElementById("notification");
@@ -755,96 +741,67 @@
                 notification.classList.remove("show");
             }, 3000);
         }
-// Event listener'ları ekle
-        document.addEventListener("DOMContentLoaded", function() {
-            // İlk açılışta pazartesi gününü bul ve takvimi oluştur
-            pazartesiyiBul();
+
+        // Koleksiyon değiştirme işlevleri
+        document.getElementById("btn-girisimsel").addEventListener("click", async function() {
+            // Buton görünümlerini güncelle
+            this.classList.add("active");
+            document.getElementById("btn-ameliyat").classList.remove("active");
             
-            // Randevuları yükle
-            randevulariYukle();
+            // Koleksiyon ve tip bilgisini güncelle
+            hastaKoleksiyonu = "girisimselHastalar";
+            koleksiyonKayitTuru = "Girişimsel";
             
-            // Bugün düğmesi
-            document.getElementById("bugun-btn").addEventListener("click", function() {
-                pazartesiyiBul(); // Bugünün bulunduğu haftayı göster
-                gosterBildirim("Bugünün tarihine dönüldü", "info");
-            });
-            
-            // Önceki hafta düğmesi
-            document.getElementById("onceki-hafta").addEventListener("click", function() {
-                currentWeekStart.setDate(currentWeekStart.getDate() - 7);
-                takvimOlustur(currentWeekStart);
-                gosterBildirim("Önceki hafta gösteriliyor", "info");
-            });
-            
-            // Sonraki hafta düğmesi
-            document.getElementById("sonraki-hafta").addEventListener("click", function() {
-                currentWeekStart.setDate(currentWeekStart.getDate() + 7);
-                takvimOlustur(currentWeekStart);
-                gosterBildirim("Sonraki hafta gösteriliyor", "info");
-            });
-            
-            // Koleksiyon değiştirme düğmeleri
-            document.getElementById("btn-girisimsel").addEventListener("click", function() {
-                if (!this.classList.contains("active")) {
-                    document.getElementById("btn-ameliyat").classList.remove("active");
-                    this.classList.add("active");
-                    hastaKoleksiyonu = "girisimselHastalar";
-                    koleksiyonKayitTuru = "Girişimsel";
-                    randevulariYukle();
-                    gosterBildirim("Girişimsel İşlemler randevuları gösteriliyor", "info");
-                }
-            });
-            
-            document.getElementById("btn-ameliyat").addEventListener("click", function() {
-                if (!this.classList.contains("active")) {
-                    document.getElementById("btn-girisimsel").classList.remove("active");
-                    this.classList.add("active");
-                    hastaKoleksiyonu = "ameliyatHastalar";
-                    koleksiyonKayitTuru = "Ameliyat";
-                    randevulariYukle();
-                    gosterBildirim("Ameliyat randevuları gösteriliyor", "info");
-                }
-            });
+            // Mevcut randevuları yeniden yükle
+            await randevulariYukle();
         });
-        
-        // Randevu detayları görüntüleme fonksiyonu (tooltip haricinde)
-        function randevuDetayGoruntule(randevuId) {
+
+        document.getElementById("btn-ameliyat").addEventListener("click", async function() {
+            // Buton görünümlerini güncelle
+            this.classList.add("active");
+            document.getElementById("btn-girisimsel").classList.remove("active");
+            
+// Koleksiyon ve tip bilgisini güncelle
+            hastaKoleksiyonu = "ameliyatHastalari";
+            koleksiyonKayitTuru = "Ameliyat";
+            
+            // Mevcut randevuları yeniden yükle
+            await randevulariYukle();
+        });
+
+        // Önceki hafta butonu
+        document.getElementById("onceki-hafta").addEventListener("click", function() {
+            // Haftayı 7 gün geriye al
+            const oncekiHafta = new Date(currentWeekStart);
+            oncekiHafta.setDate(currentWeekStart.getDate() - 7);
+            currentWeekStart = oncekiHafta;
+            
+            // Takvimi yeniden oluştur
+            takvimOlustur(currentWeekStart);
+        });
+
+        // Sonraki hafta butonu
+        document.getElementById("sonraki-hafta").addEventListener("click", function() {
+            // Haftayı 7 gün ileriye al
+            const sonrakiHafta = new Date(currentWeekStart);
+            sonrakiHafta.setDate(currentWeekStart.getDate() + 7);
+            currentWeekStart = sonrakiHafta;
+            
+            // Takvimi yeniden oluştur
+            takvimOlustur(currentWeekStart);
+        });
+
+        // Uygulama başlatma
+        document.addEventListener("DOMContentLoaded", async function() {
             try {
-                // Randevu bilgisini bul
-                const randevu = mevcutRandevular.find(r => r.id === randevuId);
-                
-                if (randevu) {
-                    // Modal veya popup açarak detayları gösterebilirsiniz.
-                    // Bu örnekte basit bir alert kullanılıyor.
-                    alert(`
-                        Hasta: ${randevu.adSoyad}
-                        Protokol No: ${randevu.protokolNo}
-                        Tarih/Saat: ${randevu.randevuBilgisi}
-                        Tanı: ${randevu.tani}
-                        Telefon: ${randevu.telefon}
-                        Not: ${randevu.hastaNotu}
-                    `);
-                } else {
-                    gosterBildirim("Randevu bilgisi bulunamadı.", "error");
-                }
+                pazartesiyiBul(); // Pazartesi gününü bul ve takvimi başlat
+                await randevulariYukle(); // İlk veri yüklemesi
+                gosterBildirim("Takvim başarıyla yüklendi", "success");
             } catch (error) {
-                console.error("Randevu görüntüleme hatası:", error);
-                gosterBildirim("Randevu görüntülenirken hata oluştu.", "error");
+                console.error("Uygulama başlatma hatası:", error);
+                gosterBildirim("Uygulama başlatılırken hata oluştu", "error");
             }
-        }
-        
-        // Tarih formatlama yardımcı fonksiyonu
-        function tarihiFormatla(tarih) {
-            const gun = tarih.getDate().toString().padStart(2, '0');
-            const ay = (tarih.getMonth() + 1).toString().padStart(2, '0');
-            const yil = tarih.getFullYear();
-            return `${gun}/${ay}/${yil}`;
-        }
-        
-        // Sayfayı belirli aralıklarla otomatik yenileme
-        setInterval(function() {
-            randevulariYukle();
-        }, 300000); // 5 dakikada bir yenile (300,000 ms)
+        });
     </script>
 </body>
 </html>
