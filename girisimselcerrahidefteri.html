@@ -497,13 +497,13 @@
                 });
             }
             
-// Randevulu hastaları gizle
-if (hideAppointed) {
-    filteredPatients = filteredPatients.filter(patient => {
-        // Randevu tarihi olmayanlar veya gizlenmiş hastaları (01.01.2999) göster
-        return !patient.bosField1 || patient.bosField1.trim() === '' || patient.bosField1.includes('01.01.2999');
-    });
-}
+            // Randevulu hastaları gizle
+            if (hideAppointed) {
+                filteredPatients = filteredPatients.filter(patient => {
+                    return !patient.bosField1 || patient.bosField1.trim() === '';
+                });
+            }
+            
             displayPatients(filteredPatients);
         }
         
@@ -535,26 +535,25 @@ if (hideAppointed) {
                     <td>${patient.formattedPhone || patient.phone || '-'}</td>
                     <td class="uppercase-text">${patient.patientNote || '-'}</td>
                     <td>${patient.bosField1 || '-'}</td>
-<td>
-    <div class="action-buttons">
-        <button type="button" class="btn btn-primary randevu-btn" data-id="${patient.id}">
-            <i class="fas fa-calendar-plus"></i> Randevu
-        </button>
-        <button type="button" class="btn btn-warning edit-btn" data-id="${patient.id}">
-            <i class="fas fa-edit"></i> Düzenle
-        </button>
-        <button type="button" class="btn btn-danger delete-btn" data-id="${patient.id}">
-            <i class="fas fa-trash"></i> Sil
-        </button>
-        <button type="button" class="btn btn-dark hide-btn" data-id="${patient.id}">
-            <i class="fas fa-eye-slash"></i> Gizle
-        </button>
-        ${patient.bosField1 && patient.bosField1.trim() !== '' ? 
-            `<button type="button" class="btn btn-secondary cancel-appointment-btn" data-id="${patient.id}">
-                <i class="fas fa-calendar-times"></i> İptal
-            </button>` : ''}
-    </div>
-</td>
+                    <td>
+                        <div class="action-buttons">
+                            <button type="button" class="btn btn-primary randevu-btn" data-id="${patient.id}">
+                                <i class="fas fa-calendar-plus"></i> Randevu
+                            </button>
+                            <button type="button" class="btn btn-warning edit-btn" data-id="${patient.id}">
+                                <i class="fas fa-edit"></i> Düzenle
+                            </button>
+                            <button type="button" class="btn btn-danger delete-btn" data-id="${patient.id}">
+                                <i class="fas fa-trash"></i> Sil
+                            </button>
+                            ${patient.bosField1 && patient.bosField1.trim() !== '' ? 
+                                `<button type="button" class="btn btn-secondary cancel-appointment-btn" data-id="${patient.id}">
+                                    <i class="fas fa-calendar-times"></i> İptal
+                                </button>` : ''}
+                        </div>
+                    </td>
+                `;
+                
                 patientsTableBody.appendChild(row);
             });
             
@@ -776,50 +775,6 @@ if (hideAppointed) {
             // Bekleyen hasta sayısı (randevusu olmayan)
             waitingPatientsEl.textContent = patients.length - appointedPatients.length;
         }
-// Gizle butonları
-document.querySelectorAll('.hide-btn').forEach(btn => {
-    btn.addEventListener('click', function() {
-        const patientId = this.getAttribute('data-id');
-        hidePatient(patientId);
-    });
-});
-
-// Hastayı gizleme fonksiyonu
-function hidePatient(patientId) {
-    if (!confirm("Bu hastayı gizlemek istediğinizden emin misiniz? Bu işlem geri alınamaz.")) {
-        return;
-    }
-    
-    // İlgili hastayı bul
-    const patient = allPatients.find(p => p.id === patientId);
-    if (!patient) return;
-    
-    // Şimdiki tarih ve saati al
-    const now = new Date();
-    const formattedDateTime = now.toLocaleString('tr-TR');
-    
-    // Gizleme notu
-    const hideNote = `[${formattedDateTime}] Hasta, işlemden kendi isteğiyle vazgeçti, işlemi başka bir sağlık kuruluşunda gerçekleştirdi, adının listeden silinmesini talep etti ya da tıbbi değerlendirme sonucunda işlem için uygun olmadığı belirlendiği gerekçeleriyle listeden çıkarıldı.`;
-    
-    // Mevcut hasta notunu al ve yeni notu ekle
-    const currentNote = patient.patientNote || '';
-    const updatedNote = currentNote ? `${currentNote}\n${hideNote}` : hideNote;
-    
-    // Firebase'de güncelleme
-    db.collection("girisimselHastalar").doc(patientId).update({
-        bosField1: "01.01.2999", // Randevu tarihini 01.01.2999 olarak ayarla
-        patientNote: updatedNote // Hasta notunu güncelle
-    })
-    .then(() => {
-        fetchPatients(); // Hasta listesini yenile
-        alert("Hasta başarıyla gizlendi.");
-    })
-    .catch((error) => {
-        console.error("Hasta gizlenirken hata: ", error);
-        alert("Hasta gizlenirken bir hata oluştu.");
-    });
-}
-
     </script>
 </body>
 </html>
