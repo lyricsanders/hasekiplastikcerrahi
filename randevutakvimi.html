@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Randevu Takvimi</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.1/firebase-firestore-compat.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1e1e1e, #2d2d30);
+            font-family: 'Arial', sans-serif;
+            color: white;
+            padding: 4px;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            max-width: 100%;
+            height: calc(100vh - 8px);
+            background: rgba(23, 23, 23, 0.9);
+            border-radius: 8px;
+            padding: 8px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 8px;
+        }
+
+        .title {
+            font-size: 1.2em;
+            background: linear-gradient(45deg, #ff2288, #387ef0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 2px;
+            font-weight: bold;
+        }
+
+        .subtitle {
+            color: #ccc;
+            font-size: 0.7em;
+        }
+
+        .right-content {
+            width: 100%;
+            flex: 1;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            min-height: 0;
+        }
+
+        .takvim-kontroller {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.75em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 300ms ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            white-space: nowrap;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .hafta-bilgisi {
+            font-weight: 600;
+            padding: 8px 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+            color: white;
+            font-size: 0.85em;
+        }
+
+        .takvim-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            overflow: auto;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .takvim-header {
+            display: flex;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background: linear-gradient(45deg, #ff2288, #387ef0);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .bos-kose {
+            width: 100px;
+            font-weight: 600;
+            padding: 12px;
+            color: white;
+            text-align: center;
+            font-size: 0.85em;
+        }
+
+        .takvim-header .saat-baslik {
+            flex: 1;
+            font-weight: 600;
+            padding: 12px;
+            color: white;
+            text-align: center;
+            border-left: 1px solid rgba(255, 255, 255, 0.2);
+            font-size: 0.85em;
+        }
+
+        .takvim-icerik {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .takvim-satir {
+            display: flex;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .takvim-satir:last-child {
+            border-bottom: none;
+        }
+
+        .gun-hucresi {
+            width: 100px;
+            padding: 12px;
+            background: rgba(255, 34, 136, 0.1);
+            font-weight: 600;
+            text-align: center;
+            font-size: 0.85em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .randevu-hucresi {
+            flex: 1;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.03);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            font-size: 0.7em;
+            line-height: 1.3;
+            overflow: hidden;
+            min-height: 100px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .randevu-hucresi:last-child {
+            border-right: none;
+        }
+
+        .randevu-grid-item {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            padding: 2px;
+        }
+
+        .grid-item-value {
+            font-weight: 500;
+            color: white;
+        }
+
+        .grid-item-label {
+            font-size: 0.8em;
+            color: #ccc;
+            margin-bottom: 2px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .randevu-hucresi:hover {
+            background: rgba(255, 34, 136, 0.1);
+            box-shadow: inset 0 0 0 1px rgba(255, 34, 136, 0.5);
+        }
+
+        .randevu-dolu {
+            background: rgba(56, 126, 240, 0.15);
+            border-left: 3px solid #387ef0;
+        }
+
+        .randevu-dolu:hover {
+            background: rgba(56, 126, 240, 0.25);
+        }
+
+        .randevu-tooltip {
+            display: none;
+            position: absolute;
+            background: rgba(23, 23, 23, 0.98);
+            border: 1px solid rgba(255, 34, 136, 0.5);
+            border-radius: 6px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            padding: 12px;
+            width: 280px;
+            z-index: 100;
+            transform: translate(-50%, -110%);
+            left: 50%;
+            top: 0;
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .randevu-tooltip.show {
+            display: block;
+            opacity: 1;
+            transform: translate(-50%, -105%);
+        }
+
+        .tooltip-title {
+            font-weight: 700;
+            color: #ff2288;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(255, 34, 136, 0.3);
+            font-size: 0.95em;
+        }
+
+        .tooltip-item {
+            margin-bottom: 8px;
+        }
+
+        .tooltip-label {
+            font-weight: 600;
+            color: #ccc;
+            font-size: 0.75em;
+            margin-bottom: 3px;
+        }
+
+        .tooltip-value {
+            font-weight: 500;
+            font-size: 0.85em;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 14px 20px;
+            border-radius: 6px;
+            color: white;
+            font-weight: 600;
+            opacity: 0;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            z-index: 1000;
+            font-size: 0.85em;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            transform: translateY(-10px);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .notification.success {
+            background: linear-gradient(45deg, #1cc88a, #17a673);
+        }
+
+        .notification.error {
+            background: linear-gradient(45deg, #f44336, #d32f2f);
+        }
+
+        .notification.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            font-style: italic;
+            color: #ccc;
+        }
+
+        @media screen and (max-width: 768px) {
+            body {
+                padding: 4px;
+            }
+
+            .container {
+                padding: 8px;
+            }
+
+            .bos-kose, .gun-hucresi {
+                width: 80px;
+                font-size: 0.75em;
+                padding: 8px;
+            }
+
+            .randevu-hucresi {
+                min-height: 60px;
+                font-size: 0.65em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="title">Randevu Takvimi Sistemi</h1>
+            <p class="subtitle">Hasta randevularını yönetin ve takip edin</p>
+        </div>
+        
+        <div class="right-content">
+            <div class="takvim-kontroller">
+                <button class="btn btn-secondary" id="onceki-hafta">
+                    <i class="fas fa-chevron-left"></i> Önceki
+                </button>
+                <span class="hafta-bilgisi" id="hafta-bilgisi">Hafta</span>
+                <button class="btn btn-secondary" id="sonraki-hafta">
+                    Sonraki <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+            
+            <div class="takvim-container" id="randevu-takvimi">
+                <div class="loading">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>Takvim yükleniyor...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="notification" class="notification"></div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyBW6n17mfVu2bXo86IZS6uz-7SNdTEsw14",
+            authDomain: "randevudefteri-566cf.firebaseapp.com",
+            projectId: "randevudefteri-566cf",
+            storageBucket: "randevudefteri-566cf.firebasestorage.app",
+            messagingSenderId: "977942747462",
+            appId: "1:977942747462:web:232f71eade848444e4ad47",
+            measurementId: "G-VT5J4WJEY7"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        
+        let currentWeekStart;
+        let hastaProtokolNo = "";
+        let mevcutRandevular = [];
+        let ameliyatBelgeId = null;
+        let lokalBelgeId = null;
+        
+        async function hastaVerileriniGetir() {
+            try {
+                const doc = await db.collection("randevutakvimi2").doc("randevutakvimi2").get();
+                
+                if (doc.exists) {
+                    const data = doc.data();
+                    hastaProtokolNo = data.protokol || "";
+                    
+                    await herikiBelgeIdleriniAra();
+                    await randevulariYukle();
+                    pazartesiyiBul();
+                } else {
+                    gosterBildirim('<i class="fas fa-exclamation-circle"></i> Hasta bilgileri bulunamadı.', 'error');
+                }
+            } catch (error) {
+                console.error("Veri çekme hatası:", error);
+                gosterBildirim('<i class="fas fa-times-circle"></i> Veri yükleme hatası.', 'error');
+            }
+        }
+        
+        async function herikiBelgeIdleriniAra() {
+            try {
+                const ameliyatSnapshot = await db.collection("ameliyathastalari")
+                    .where("protokol", "==", hastaProtokolNo)
+                    .get();
+                
+                if (!ameliyatSnapshot.empty) {
+                    ameliyatBelgeId = ameliyatSnapshot.docs[0].id;
+                } else {
+                    ameliyatBelgeId = null;
+                }
+                
+                const lokalSnapshot = await db.collection("lokalhastalari")
+                    .where("protokol", "==", hastaProtokolNo)
+                    .get();
+                
+                if (!lokalSnapshot.empty) {
+                    lokalBelgeId = lokalSnapshot.docs[0].id;
+                } else {
+                    lokalBelgeId = null;
+                }
+            } catch (error) {
+                console.error("Hasta belge araması hatası:", error);
+                gosterBildirim("Hasta kaydı araması sırasında hata oluştu.", "error");
+            }
+        }
+        
+        function pazartesiyiBul() {
+            const bugun = new Date();
+            const haftaninGunu = bugun.getDay();
+            const pazartesiyeKalanGun = haftaninGunu === 0 ? -6 : 1 - haftaninGunu;
+            
+            const pazartesi = new Date(bugun);
+            pazartesi.setDate(bugun.getDate() + pazartesiyeKalanGun);
+            pazartesi.setHours(0, 0, 0, 0);
+            
+            currentWeekStart = pazartesi;
+            takvimOlustur(currentWeekStart);
+        }
+        
+        async function randevulariYukle() {
+            try {
+                const ameliyatSnapshot = await db.collection("ameliyathastalari").get();
+                const lokalSnapshot = await db.collection("lokalhastalari").get();
+                
+                mevcutRandevular = [];
+                
+                ameliyatSnapshot.forEach(doc => {
+                    const data = doc.data();
+                    if (data.randevutarihi && data.protokol) {
+                        mevcutRandevular.push({
+                            id: doc.id,
+                            randevuBilgisi: data.randevutarihi,
+                            protokolNo: data.protokol,
+                            adSoyad: data.adsoyad || "",
+                            telefon: data.telefon || "",
+                            tani: data.tani || "",
+                            koleksiyon: "ameliyathastalari"
+                        });
+                    }
+                });
+                
+                lokalSnapshot.forEach(doc => {
+                    const data = doc.data();
+                    if (data.randevutarihi && data.protokol) {
+                        mevcutRandevular.push({
+                            id: doc.id,
+                            randevuBilgisi: data.randevutarihi,
+                            protokolNo: data.protokol,
+                            adSoyad: data.adsoyad || "",
+                            telefon: data.telefon || "",
+                            tani: data.tani || "",
+                            koleksiyon: "lokalhastalari"
+                        });
+                    }
+                });
+                
+            } catch (error) {
+                console.error("Randevu yükleme hatası:", error);
+                gosterBildirim("Randevular yüklenirken hata oluştu.", "error");
+            }
+        }
+        
+        function takvimOlustur(baslangicTarihi) {
+            const takvimContainer = document.getElementById("randevu-takvimi");
+            takvimContainer.innerHTML = "";
+            
+            const saatler = [
+                "09:00-09:30", "09:30-10:00", "10:00-10:30", "10:30-11:00",
+                "11:00-11:30", "11:30-12:00", "13:00-13:30", "13:30-14:00",
+                "14:00-14:30", "14:30-15:00", "15:00-15:30", "15:30-16:00"
+            ];
+            
+            const tarihler = [];
+            for (let i = 0; i < 5; i++) {
+                const tarih = new Date(baslangicTarihi);
+                tarih.setDate(baslangicTarihi.getDate() + i);
+                tarihler.push(tarih);
+            }
+            
+            const ilkGun = tarihler[0];
+            const sonGun = tarihler[4];
+            const aylar = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+            document.getElementById("hafta-bilgisi").textContent = 
+                `${ilkGun.getDate()} ${aylar[ilkGun.getMonth()]} - ${sonGun.getDate()} ${aylar[sonGun.getMonth()]} ${sonGun.getFullYear()}`;
+            
+            const headerRow = document.createElement("div");
+            headerRow.className = "takvim-header";
+            
+            const bos = document.createElement("div");
+            bos.className = "bos-kose";
+            bos.textContent = "Gün / Saat";
+            headerRow.appendChild(bos);
+            
+            saatler.forEach(saat => {
+                const saatBaslik = document.createElement("div");
+                saatBaslik.className = "saat-baslik";
+                saatBaslik.textContent = saat;
+                headerRow.appendChild(saatBaslik);
+            });
+            
+            takvimContainer.appendChild(headerRow);
+            
+            const takvimIcerik = document.createElement("div");
+            takvimIcerik.className = "takvim-icerik";
+            takvimContainer.appendChild(takvimIcerik);
+            
+            tarihler.forEach(tarih => {
+                const gunSatiri = document.createElement("div");
+                gunSatiri.className = "takvim-satir";
+                
+                const gunHucresi = document.createElement("div");
+                gunHucresi.className = "gun-hucresi";
+                const gunler = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"];
+                gunHucresi.textContent = `${gunler[tarih.getDay()]} ${tarih.getDate()}/${tarih.getMonth() + 1}`;
+                gunSatiri.appendChild(gunHucresi);
+                
+                saatler.forEach(saat => {
+                    const randevuHucresi = document.createElement("div");
+                    randevuHucresi.className = "randevu-hucresi";
+                    
+                    const tarihStr = `${tarih.getDate()}/${tarih.getMonth() + 1}/${tarih.getFullYear()}`;
+                    const randevuBilgisi = `${tarihStr} ${saat}`;
+                    randevuHucresi.dataset.randevuBilgisi = randevuBilgisi;
+                    
+                    const mevcutRandevu = mevcutRandevular.find(r => r.randevuBilgisi === randevuBilgisi);
+                    
+                    if (mevcutRandevu) {
+                        randevuHucresi.classList.add("randevu-dolu");
+                        
+                        const adSoyadItem = document.createElement("div");
+                        adSoyadItem.className = "randevu-grid-item";
+                        adSoyadItem.innerHTML = `
+                            <div class="grid-item-label">Hasta</div>
+                            <div class="grid-item-value">${mevcutRandevu.adSoyad || "-"}</div>
+                        `;
+                        randevuHucresi.appendChild(adSoyadItem);
+                        
+                        const protokolItem = document.createElement("div");
+                        protokolItem.className = "randevu-grid-item";
+                        protokolItem.innerHTML = `
+                            <div class="grid-item-label">Protokol</div>
+                            <div class="grid-item-value">${mevcutRandevu.protokolNo || "-"}</div>
+                        `;
+                        randevuHucresi.appendChild(protokolItem);
+                        
+                        const taniItem = document.createElement("div");
+                        taniItem.className = "randevu-grid-item";
+                        taniItem.innerHTML = `
+                            <div class="grid-item-label">Tanı</div>
+                            <div class="grid-item-value">${mevcutRandevu.tani || "-"}</div>
+                        `;
+                        randevuHucresi.appendChild(taniItem);
+                        
+                        const telefonItem = document.createElement("div");
+                        telefonItem.className = "randevu-grid-item";
+                        telefonItem.innerHTML = `
+                            <div class="grid-item-label">Telefon</div>
+                            <div class="grid-item-value">${mevcutRandevu.telefon || "-"}</div>
+                        `;
+                        randevuHucresi.appendChild(telefonItem);
+                        
+                        const tooltip = document.createElement("div");
+                        tooltip.className = "randevu-tooltip";
+                        tooltip.innerHTML = `
+                            <div class="tooltip-title">${randevuBilgisi}</div>
+                            <div class="tooltip-item">
+                                <div class="tooltip-label">Hasta:</div>
+                                <div class="tooltip-value">${mevcutRandevu.adSoyad || "-"}</div>
+                            </div>
+                            <div class="tooltip-item">
+                                <div class="tooltip-label">Protokol No:</div>
+                                <div class="tooltip-value">${mevcutRandevu.protokolNo || "-"}</div>
+                            </div>
+                            <div class="tooltip-item">
+                                <div class="tooltip-label">Tanı:</div>
+                                <div class="tooltip-value">${mevcutRandevu.tani || "-"}</div>
+                            </div>
+                            <div class="tooltip-item">
+                                <div class="tooltip-label">Telefon:</div>
+                                <div class="tooltip-value">${mevcutRandevu.telefon || "-"}</div>
+                            </div>
+                        `;
+                        randevuHucresi.appendChild(tooltip);
+                        
+                        randevuHucresi.addEventListener("mouseenter", function() {
+                            tooltip.classList.add("show");
+                        });
+                        
+                        randevuHucresi.addEventListener("mouseleave", function() {
+                            tooltip.classList.remove("show");
+                        });
+                    }
+                    
+                    randevuHucresi.addEventListener("click", function() {
+                        randevuSec(this);
+                    });
+                    
+                    gunSatiri.appendChild(randevuHucresi);
+                });
+                
+                takvimIcerik.appendChild(gunSatiri);
+            });
+        }
+        
+        async function randevuSec(hucre) {
+            const randevuBilgisi = hucre.dataset.randevuBilgisi;
+            const mevcutRandevu = mevcutRandevular.find(r => r.randevuBilgisi === randevuBilgisi);
+            
+            if (mevcutRandevu && mevcutRandevu.protokolNo !== hastaProtokolNo) {
+                gosterBildirim('<i class="fas fa-exclamation-triangle"></i> Bu randevu saati başka bir hasta tarafından alınmış.', 'error');
+                return;
+            }
+            
+            let hastaKoleksiyonu = "";
+            let hastaBelgeId = null;
+            
+            if (ameliyatBelgeId) {
+                hastaKoleksiyonu = "ameliyathastalari";
+                hastaBelgeId = ameliyatBelgeId;
+            } else if (lokalBelgeId) {
+                hastaKoleksiyonu = "lokalhastalari";
+                hastaBelgeId = lokalBelgeId;
+            } else {
+                gosterBildirim('<i class="fas fa-exclamation-circle"></i> Hasta kaydı bulunamadı. Lütfen önce lokalhastalari veya ameliyathastalari koleksiyonunda hasta kaydı oluşturun.', 'error');
+                return;
+            }
+            
+            try {
+                await db.collection(hastaKoleksiyonu).doc(hastaBelgeId).update({
+                    randevutarihi: randevuBilgisi
+                });
+                
+                const tarihParcalari = randevuBilgisi.split(' ');
+                const tarihBolum = tarihParcalari[0].split('/');
+                const saatBolum = tarihParcalari[1].split('-')[0].split(':');
+                
+                const randevuTarihiTimestamp = new Date(
+                    parseInt(tarihBolum[2]),
+                    parseInt(tarihBolum[1]) - 1,
+                    parseInt(tarihBolum[0]),
+                    parseInt(saatBolum[0]),
+                    parseInt(saatBolum[1])
+                );
+                
+                await db.collection("randevutakvimi2").doc("randevutakvimi2").update({
+                    tarihsaat: firebase.firestore.Timestamp.fromDate(randevuTarihiTimestamp)
+                });
+                
+                gosterBildirim('<i class="fas fa-check-circle"></i> Randevu başarıyla kaydedildi!', 'success');
+                
+                await randevulariYukle();
+                takvimOlustur(currentWeekStart);
+                
+            } catch (error) {
+                console.error("Randevu işlemi hatası:", error);
+                gosterBildirim('<i class="fas fa-exclamation-triangle"></i> Randevu işlemi sırasında bir hata oluştu.', 'error');
+            }
+        }
+        
+        function gosterBildirim(mesaj, tip) {
+            const notification = document.getElementById("notification");
+            notification.innerHTML = mesaj;
+            notification.className = `notification ${tip}`;
+            notification.classList.add("show");
+            
+            setTimeout(() => {
+                notification.classList.remove("show");
+            }, 3000);
+        }
+        
+        document.getElementById("onceki-hafta").addEventListener("click", function() {
+            currentWeekStart.setDate(currentWeekStart.getDate() - 7);
+            takvimOlustur(currentWeekStart);
+        });
+        
+        document.getElementById("sonraki-hafta").addEventListener("click", function() {
+            currentWeekStart.setDate(currentWeekStart.getDate() + 7);
+            takvimOlustur(currentWeekStart);
+        });
+        
+        document.addEventListener("DOMContentLoaded", function() {
+            hastaVerileriniGetir();
+        });
+    </script>
+</body>
+</html>
