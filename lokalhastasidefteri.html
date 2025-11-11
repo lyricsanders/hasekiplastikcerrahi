@@ -294,6 +294,16 @@
             font-size: 0.7em;
         }
 
+        .btn-call {
+            background: linear-gradient(45deg, #10b981, #059669);
+            color: white;
+        }
+
+        .btn-call:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+        }
+
         .switch-container {
             display: flex;
             align-items: center;
@@ -586,7 +596,7 @@
             }
 
             table {
-                font-size: 0.7em;
+                font-size: 0.75em;
             }
 
             thead th {
@@ -684,7 +694,6 @@
             }
         }
 
-        /* Çok küçük telefonlar için */
         @media screen and (max-width: 360px) {
             body {
                 padding: 1px;
@@ -779,7 +788,6 @@
             }
         }
 
-        /* Yatay (landscape) mod için */
         @media screen and (max-height: 500px) and (orientation: landscape) {
             .left-sidebar {
                 position: relative;
@@ -816,14 +824,12 @@
             }
         }
 
-        /* Tablo scroll için özel ayarlar */
         @media screen and (max-width: 768px) {
             .table-wrapper {
                 overflow-x: auto;
                 -webkit-overflow-scrolling: touch;
             }
 
-            /* Mobilde kart görünümü */
             table, thead, tbody, th, td, tr {
                 display: block;
             }
@@ -866,6 +872,10 @@
                 font-size: 0.75em;
             }
 
+            tbody td.td-telefon {
+                grid-template-columns: 100px 1fr auto;
+            }
+
             tbody td:last-child {
                 grid-template-columns: 1fr;
                 margin-top: 8px;
@@ -891,7 +901,6 @@
             }
         }
 
-        /* iPhone SE ve benzeri küçük ekranlar */
         @media screen and (max-width: 375px) {
             .action-buttons {
                 grid-template-columns: repeat(2, 1fr);
@@ -904,12 +913,15 @@
                 font-size: 0.85em;
             }
 
+            tbody td.td-telefon {
+                grid-template-columns: 90px 1fr auto;
+            }
+
             tbody td::before {
                 font-size: 0.7em;
             }
         }
 
-        /* Dokunmatik cihazlar için buton boyutları */
         @media (hover: none) and (pointer: coarse) {
             .btn {
                 min-height: 32px;
@@ -950,9 +962,7 @@
         <div id="alert-box" class="hidden"></div>
         
         <div class="main-layout">
-            <!-- Sol Sidebar -->
             <div class="left-sidebar">
-                <!-- İstatistikler -->
                 <div class="stat-card primary">
                     <div class="stat-icon">
                         <i class="fas fa-users"></i>
@@ -1003,7 +1013,6 @@
                     </div>
                 </div>
                 
-                <!-- Arama ve Filtreler -->
                 <div class="card">
                     <div class="card-header">
                         <i class="fas fa-search"></i> Arama
@@ -1047,7 +1056,6 @@
                 </div>
             </div>
             
-            <!-- Sağ İçerik - Hasta Tablosu -->
             <div class="right-content">
                 <div class="card">
                     <div class="card-header">
@@ -1082,7 +1090,6 @@
         </div>
     </div>
     
-    <!-- Düzenleme Modal -->
     <div class="modal" id="editPatientModal">
         <div class="modal-dialog">
             <div class="modal-header">
@@ -1129,7 +1136,6 @@
         </div>
     </div>
 
-    <!-- Randevu Takvimi Modal -->
     <div class="modal" id="appointmentCalendarModal">
         <div class="modal-dialog fullscreen">
             <div class="modal-header">
@@ -1145,7 +1151,6 @@
     </div>
 
     <script>
-        // Firebase yapılandırması
         const firebaseConfig = {
             apiKey: "AIzaSyBW6n17mfVu2bXo86IZS6uz-7SNdTEsw14",
             authDomain: "randevudefteri-566cf.firebaseapp.com",
@@ -1176,6 +1181,18 @@
             const cleaned = phoneNumber.replace(/\D/g, '');
             if (cleaned.length < 10) return cleaned;
             return cleaned.replace(/(\d{1})(\d{3})(\d{3})(\d{2})(\d{2})/, "$1$2 $3 $4 $5");
+        }
+        
+        function getCleanPhoneNumber(phoneNumber) {
+            if (!phoneNumber) return '';
+            return phoneNumber.replace(/\D/g, '');
+        }
+        
+        function makePhoneCall(phoneNumber) {
+            const cleanPhone = getCleanPhoneNumber(phoneNumber);
+            if (cleanPhone) {
+                window.location.href = `tel:${cleanPhone}`;
+            }
         }
         
         function showAlert(message, type) {
@@ -1217,7 +1234,6 @@
             
             showAlert('<i class="fas fa-spinner fa-spin"></i> Excel dosyası hazırlanıyor...', 'success');
             
-            // Excel için veri hazırlama
             const excelData = allPatients.map(patient => {
                 return {
                     'Tarih/Saat': patient.tarihsaat ? formatFirebaseTimestamp(patient.tarihsaat) : '',
@@ -1230,31 +1246,26 @@
                 };
             });
             
-            // Worksheet oluştur
             const ws = XLSX.utils.json_to_sheet(excelData);
             
-            // Sütun genişliklerini ayarla
             ws['!cols'] = [
-                { wch: 20 }, // Tarih/Saat
-                { wch: 15 }, // Protokol
-                { wch: 25 }, // Adı Soyadı
-                { wch: 30 }, // Tanısı
-                { wch: 15 }, // Telefon
-                { wch: 50 }, // Notu
-                { wch: 20 }  // Randevu
+                { wch: 20 },
+                { wch: 15 },
+                { wch: 25 },
+                { wch: 30 },
+                { wch: 15 },
+                { wch: 50 },
+                { wch: 20 }
             ];
             
-            // Workbook oluştur
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Hasta Listesi");
             
-            // Dosya adı için tarih
             const now = new Date();
             const dateStr = now.toLocaleDateString('tr-TR').replace(/\./g, '-');
             const timeStr = now.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }).replace(/:/g, '-');
             const fileName = `Hasta_Listesi_${dateStr}_${timeStr}.xlsx`;
             
-            // Excel dosyasını indir
             XLSX.writeFile(wb, fileName);
             
             showAlert('<i class="fas fa-check-circle"></i> Excel dosyası başarıyla indirildi!', 'success');
@@ -1322,7 +1333,6 @@
             
             if (hideAppointed) {
                 filteredPatients = filteredPatients.filter(patient => {
-                    // String kontrolü eklendi - HATA DÜZELTMESİ
                     return !patient.randevutarihi || 
                            (typeof patient.randevutarihi === 'string' && patient.randevutarihi.trim() === '') ||
                            patient.randevutarihi === '';
@@ -1349,19 +1359,26 @@
             patients.forEach(patient => {
                 const row = document.createElement('tr');
                 
-                // String kontrolü eklendi - HATA DÜZELTMESİ
                 if (patient.randevutarihi && 
                     typeof patient.randevutarihi === 'string' && 
                     patient.randevutarihi.trim() !== '') {
                     row.classList.add('randevu-tarihi-var');
                 }
                 
+                const phoneDisplay = patient.formattedPhone || patient.telefon || '-';
+                const hasPhone = patient.telefon && patient.telefon.trim() !== '';
+                
                 row.innerHTML = `
                     <td data-label="Tarih/Saat">${patient.tarihsaat ? formatFirebaseTimestamp(patient.tarihsaat) : '-'}</td>
                     <td data-label="Protokol">${patient.protokol || '-'}</td>
                     <td class="td-adsoyad" data-label="Adı Soyadı" title="${patient.adsoyad || '-'}">${patient.adsoyad || '-'}</td>
                     <td class="td-tani" data-label="Tanısı">${patient.tani || '-'}</td>
-                    <td class="td-telefon" data-label="Telefon" style="text-transform: none;" title="${patient.formattedPhone || patient.telefon || '-'}">${patient.formattedPhone || patient.telefon || '-'}</td>
+                    <td class="td-telefon" data-label="Telefon" style="text-transform: none;" title="${phoneDisplay}">
+                        <span>${phoneDisplay}</span>
+                        ${hasPhone ? `<button class="btn btn-call btn-sm call-phone-btn" data-phone="${patient.telefon}" title="Ara" style="margin-left: 4px;">
+                            <i class="fas fa-phone-alt"></i>
+                        </button>` : ''}
+                    </td>
                     <td class="td-not" data-label="Notu">${patient.not || '-'}</td>
                     <td data-label="Randevu">${patient.randevutarihi || '-'}</td>
                     <td>
@@ -1410,6 +1427,14 @@
         }
         
         function addButtonEventListeners() {
+            document.querySelectorAll('.call-phone-btn').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const phoneNumber = this.getAttribute('data-phone');
+                    makePhoneCall(phoneNumber);
+                });
+            });
+            
             document.querySelectorAll('.appointment-btn').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const patientId = this.getAttribute('data-id');
